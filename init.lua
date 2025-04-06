@@ -104,6 +104,15 @@ require('packer').startup(function(use)
     end
   }
 
+  -- Or for packer.nvim
+  use {
+    "yourusername/llm-agent.nvim",
+    config = function()
+      require("llm-agent").setup({
+        -- Configuration as above
+      })
+    end,
+  }
   -- Other plugins would go here
 
   -- Automatically set up configuration after cloning packer.nvim
