@@ -24,7 +24,7 @@ A context-aware AI assistant for Neovim with sophisticated context management si
 
 ```lua
 {
-  "yourusername/llm-agent.nvim",
+  "ZachBeta/llm-agent.nvim",
   dependencies = {
     "nvim-lua/plenary.nvim",
   },
@@ -45,7 +45,7 @@ A context-aware AI assistant for Neovim with sophisticated context management si
 
 ```lua
 use {
-  "yourusername/llm-agent.nvim",
+  "ZachBeta/llm-agent.nvim",
   requires = { "nvim-lua/plenary.nvim" },
   config = function()
     require("llm-agent").setup({

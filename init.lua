@@ -106,13 +106,13 @@ require('packer').startup(function(use)
 
   -- Or for packer.nvim
   use {
-    "ZachBeta/llm-agent.nvim",
+    '~/.config/nvim/lua/llm-agent',  -- Absolute path with ~
+    as = 'llm-agent',
     config = function()
-      require("llm-agent").setup({
-        -- Configuration as above
-      })
+      require("llm-agent").setup()
     end,
   }
+  
   -- Other plugins would go here
 
   -- Automatically set up configuration after cloning packer.nvim
