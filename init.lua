@@ -106,7 +106,7 @@ require('packer').startup(function(use)
 
   -- Or for packer.nvim
   use {
-    "yourusername/llm-agent.nvim",
+    "ZachBeta/llm-agent.nvim",
     config = function()
       require("llm-agent").setup({
         -- Configuration as above
