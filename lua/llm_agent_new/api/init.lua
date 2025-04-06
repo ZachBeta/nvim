@@ -51,16 +51,15 @@ function M.send_request(messages, final_callback)
       stream = false
     }
     local request_body_json = vim.fn.json_encode(request_body_tbl)
-    -- No need to shellescape when passing args directly to jobstart
-
+    
     -- Construct the command arguments for jobstart
     local cmd_args = {
         'curl',
-        '-s', -- Add silent flag to suppress progress meter on stderr
+        '-s',
         '-X', 'POST',
         url,
         '-H', "Content-Type: application/json",
-        '-d', request_body_json -- Pass raw JSON string directly
+        '-d', request_body_json
     }
 
     vim.notify(string.format("LLM Agent API: Starting jobstart for Ollama (%s) at %s", model, url), vim.log.levels.INFO)
@@ -83,10 +82,9 @@ function M.send_request(messages, final_callback)
         end,
         on_stderr = function(job_id, data, event)
              vim.schedule(function()
-                -- Only notify on stderr if it's likely an error (with -s flag)
-                if data then 
+                if data then
                    vim.notify("Job Callback: on_stderr received data chunk: " .. table.concat(data, ""), vim.log.levels.WARN)
-                   table.insert(stderr_chunks, table.concat(data, "")) 
+                   table.insert(stderr_chunks, table.concat(data, ""))
                 end
             end)
         end,

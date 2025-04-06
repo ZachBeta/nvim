@@ -22,7 +22,7 @@ describe("llm_agent_new init", function()
     assert.is_table(M._config)
     -- Check if a default value exists
     assert.is_not_nil(M._config.ui.width)
-    assert.is_equal(M._config.ui.width, 80) 
+    assert.is_equal(M._config.ui.width, 80)
   end)
 
   it("should merge user config", function()

@@ -21,14 +21,13 @@ vim.opt.runtimepath = ''
 for _, path in ipairs(paths_to_add) do
   if vim.fn.isdirectory(path) > 0 then
     vim.opt.runtimepath:append(path) -- Use append or prepend consistently
-  else
+  -- else
     -- print('Warning: Test setup could not find directory: ' .. path)
   end
 end
 
 -- Append Neovim's own runtime dir last
 vim.opt.runtimepath:append(vim.env.VIMRUNTIME)
-
 
 -- Minimal settings
 vim.o.compatible = false
@@ -37,8 +36,8 @@ vim.o.termguicolors = true
 -- Ensure Plenary's plugin scripts are loaded from the modified runtimepath
 vim.cmd [[runtime! plugin/plenary.vim]]
 
--- Now require Plenary
-local plenary_ok, plenary = pcall(require, 'plenary')
+-- Now require Plenary, but we don't need to store it in a variable if not used directly
+local plenary_ok, _ = pcall(require, 'plenary') -- Use _ for unused error variable
 if not plenary_ok then
   error("Failed to require plenary.nvim. Ensure it is installed correctly at: " .. plenary_path .. "\nRuntime path: " .. vim.o.runtimepath)
 end 

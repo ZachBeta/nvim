@@ -24,8 +24,8 @@ vim.api.nvim_set_keymap('n', '<Leader>test', ':echo "Leader key works!"<CR>', {n
 -- Add to init.lua
 -- Debug helper function
 local function debug_print(message)
-  vim.api.nvim_echo({{message, "WarningMsg"}}, true, {})
-  print(message)
+  vim.notify("[DEBUG] " .. message, vim.log.levels.DEBUG) -- Use vim.notify for debug
+  -- print(message) -- Avoid raw print
 end
 
 --

@@ -19,9 +19,9 @@ local function append_message(role, message)
         return
     end
 
-    local is_modifiable = api.nvim_buf_get_option(bufnr, 'modifiable')
+    -- local is_modifiable = api.nvim_buf_get_option(bufnr, 'modifiable') -- Unused variable
     api.nvim_buf_set_option(bufnr, 'modifiable', true)
-    
+
     local last_line = api.nvim_buf_line_count(bufnr)
     local formatted_lines = {}
     table.insert(formatted_lines, string.format("**%s:**", role))
@@ -30,9 +30,9 @@ local function append_message(role, message)
     end
     table.insert(formatted_lines, "")
     api.nvim_buf_set_lines(bufnr, last_line - 1, last_line - 1, false, formatted_lines)
-    
+
     -- Keep buffer modifiable while chat is active
-    -- api.nvim_buf_set_option(bufnr, 'modifiable', is_modifiable) 
+    -- api.nvim_buf_set_option(bufnr, 'modifiable', is_modifiable)
 end
 M.append_message = function(...) append_message(...) end -- Expose helper
 
@@ -57,17 +57,18 @@ local function ensure_window_open()
     local config = chat_state.config
     if not bufnr or not api.nvim_buf_is_loaded(bufnr) then
         -- Create buffer if it doesn't exist
-        bufnr = api.nvim_create_buf(false, true) 
+        bufnr = api.nvim_create_buf(false, true)
         chat_state.bufnr = bufnr
         api.nvim_buf_set_option(bufnr, 'bufhidden', 'hide') -- Hide buffer, don't wipe
         api.nvim_buf_set_option(bufnr, 'filetype', 'markdown')
         api.nvim_buf_set_option(bufnr, 'buftype', 'prompt')
         api.nvim_buf_set_option(bufnr, 'modifiable', true)
-        api.nvim_buf_set_lines(bufnr, 0, -1, false, {"LLM Agent Chat", ""}) 
+        api.nvim_buf_set_lines(bufnr, 0, -1, false, {"LLM Agent Chat", ""})
         vim.fn.prompt_setprompt(bufnr, "> ")
         vim.fn.prompt_setcallback(bufnr, on_prompt_submit)
         -- Add other keymaps if needed, e.g., for normal mode actions
         -- api.nvim_buf_set_keymap(bufnr, 'n', 'q', ':echo "Use toggle command to hide"<CR>', { noremap = true, silent = true })
+        -- api.nvim_buf_set_keymap(bufnr, 'i', '<Esc>', '<Nop>', { noremap = true, silent = true }) -- REMOVE/COMMENT THIS LINE
     end
 
     -- Open split if window doesn't exist or is invalid
@@ -77,7 +78,7 @@ local function ensure_window_open()
         vim.cmd(string.format('vertical resize %d', config.width or 80))
         vim.notify(string.format("Opened chat window %d.", chat_state.winid), vim.log.levels.INFO)
     end
-    
+
     return chat_state.winid
 end
 
@@ -86,9 +87,9 @@ function M.toggle_chat_window(config, send_cb)
   -- Store config and callback if provided (usually only on first call)
   if config then chat_state.config = config end
   if send_cb then chat_state.send_message_callback = send_cb end
-  
+
   local winid = chat_state.winid
-  
+
   -- Check if window exists and is valid
   if winid and api.nvim_win_is_valid(winid) then
     -- Window is valid, check if it's the current window
@@ -110,7 +111,7 @@ function M.toggle_chat_window(config, send_cb)
        -- Move cursor to the end for prompt
        api.nvim_win_set_cursor(winid, {api.nvim_buf_line_count(chat_state.bufnr), 0})
        vim.cmd('startinsert') -- Enter insert mode
-    else 
+    else
        vim.notify("Failed to open or find chat window.", vim.log.levels.ERROR)
     end
   end

@@ -84,7 +84,7 @@ function M.setup(opts)
   -- Remove commands, add keymap
   -- Ensure keymap is set only after modules are loaded
   if ui_module and ui_module.toggle_chat_window then
-      vim.api.nvim_set_keymap('n', '<Leader>ac', ':lua require("llm_agent_new").toggle_chat()<CR>', 
+      vim.api.nvim_set_keymap('n', '<Leader>ac', ':lua require("llm_agent_new").toggle_chat()<CR>',
           { noremap = true, silent = true, desc = "Toggle LLM Agent Chat" })
   else
       vim.notify("LLM Agent: Failed to set up toggle keymap, UI module not ready.", vim.log.levels.WARN)
