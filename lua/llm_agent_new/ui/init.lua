@@ -68,7 +68,6 @@ local function ensure_window_open()
         vim.fn.prompt_setcallback(bufnr, on_prompt_submit)
         -- Add other keymaps if needed, e.g., for normal mode actions
         -- api.nvim_buf_set_keymap(bufnr, 'n', 'q', ':echo "Use toggle command to hide"<CR>', { noremap = true, silent = true })
-        api.nvim_buf_set_keymap(bufnr, 'i', '<Esc>', '<Nop>', { noremap = true, silent = true })
     end
 
     -- Open split if window doesn't exist or is invalid
