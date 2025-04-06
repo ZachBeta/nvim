@@ -3,48 +3,38 @@
 local api = vim.api
 local M = {}
 
--- Store the buffer number and the callback for sending messages
-local chat_bufnr = nil
-local send_message_callback = nil
+-- Store the buffer number, window ID, and the callback for sending messages
+local chat_state = {
+  bufnr = nil,
+  winid = nil,
+  send_message_callback = nil,
+  config = nil -- Store config for reopening
+}
 
--- Helper to append messages, managing modifiable state
-local function append_message(bufnr_arg, role, message)
-    -- Use the module-level chat_bufnr if no specific bufnr is passed
-    local bufnr = bufnr_arg or chat_bufnr
-    if not bufnr or type(bufnr) ~= "number" then
-        vim.notify("UI Error: append_message called without a valid buffer number. Got: " .. vim.inspect(bufnr), vim.log.levels.ERROR)
-        return
-    end
-    
-    -- Ensure buffer is still valid before proceeding
-    if not api.nvim_buf_is_valid(bufnr) then
-        vim.notify("UI Error: append_message called with an invalid buffer number: " .. bufnr, vim.log.levels.ERROR)
-        chat_bufnr = nil -- Clear the stored buffer number if invalid
+-- Helper to append messages
+local function append_message(role, message)
+    local bufnr = chat_state.bufnr
+    if not bufnr or not api.nvim_buf_is_valid(bufnr) then
+        vim.notify("UI Error: Cannot append message, chat buffer is invalid or missing.", vim.log.levels.ERROR)
         return
     end
 
     local is_modifiable = api.nvim_buf_get_option(bufnr, 'modifiable')
     api.nvim_buf_set_option(bufnr, 'modifiable', true)
     
-    -- Find the last line (where the prompt is)
     local last_line = api.nvim_buf_line_count(bufnr)
-    
-    -- Format the message
     local formatted_lines = {}
     table.insert(formatted_lines, string.format("**%s:**", role))
-    -- Split message by newlines and add each line
     for _, line in ipairs(vim.split(message, "\n")) do
         table.insert(formatted_lines, line)
     end
-    table.insert(formatted_lines, "") -- Add empty line for spacing
-    
-    -- Insert message before the prompt line
+    table.insert(formatted_lines, "")
     api.nvim_buf_set_lines(bufnr, last_line - 1, last_line - 1, false, formatted_lines)
     
-    api.nvim_buf_set_option(bufnr, 'modifiable', is_modifiable) 
+    -- Keep buffer modifiable while chat is active
+    -- api.nvim_buf_set_option(bufnr, 'modifiable', is_modifiable) 
 end
-
-M.append_message = append_message -- Expose helper if needed externally
+M.append_message = function(...) append_message(...) end -- Expose helper
 
 -- Function called when Enter is pressed on the prompt line
 local function on_prompt_submit(input)
@@ -52,67 +42,84 @@ local function on_prompt_submit(input)
     vim.notify("Input cannot be empty.", vim.log.levels.WARN)
     return
   end
-
-  -- Append user message immediately
-  append_message(chat_bufnr, "User", input)
-  
-  -- Clear the prompt area (optional, handled by buftype=prompt?)
-  -- api.nvim_buf_set_lines(chat_bufnr, -1, -1, false, { "> " })
-
-  -- Call the actual send function provided during setup
-  if send_message_callback then
+  append_message("User", input)
+  if chat_state.send_message_callback then
     vim.notify("UI: Sending message to API module...", vim.log.levels.DEBUG)
-    send_message_callback({input}) -- Send as array for now, matching API expectation
+    chat_state.send_message_callback({input})
   else
     vim.notify("UI Error: send_message_callback not set!", vim.log.levels.ERROR)
   end
 end
 
--- Function to open and set up the chat buffer
-function M.setup_chat_window(config, send_cb)
-  send_message_callback = send_cb -- Store the callback
-  local width = config.width or 80
+-- Function to create and open the chat window if needed
+local function ensure_window_open()
+    local bufnr = chat_state.bufnr
+    local config = chat_state.config
+    if not bufnr or not api.nvim_buf_is_loaded(bufnr) then
+        -- Create buffer if it doesn't exist
+        bufnr = api.nvim_create_buf(false, true) 
+        chat_state.bufnr = bufnr
+        api.nvim_buf_set_option(bufnr, 'bufhidden', 'hide') -- Hide buffer, don't wipe
+        api.nvim_buf_set_option(bufnr, 'filetype', 'markdown')
+        api.nvim_buf_set_option(bufnr, 'buftype', 'prompt')
+        api.nvim_buf_set_option(bufnr, 'modifiable', true)
+        api.nvim_buf_set_lines(bufnr, 0, -1, false, {"LLM Agent Chat", ""}) 
+        vim.fn.prompt_setprompt(bufnr, "> ")
+        vim.fn.prompt_setcallback(bufnr, on_prompt_submit)
+        -- Add other keymaps if needed, e.g., for normal mode actions
+        -- api.nvim_buf_set_keymap(bufnr, 'n', 'q', ':echo "Use toggle command to hide"<CR>', { noremap = true, silent = true })
+        api.nvim_buf_set_keymap(bufnr, 'i', '<Esc>', '<Nop>', { noremap = true, silent = true })
+    end
 
-  if chat_bufnr and api.nvim_buf_is_loaded(chat_bufnr) then
-    local win_id = vim.fn.bufwinid(chat_bufnr)
-    if win_id ~= -1 then
-      api.nvim_set_current_win(win_id)
-      vim.notify("Switched to existing chat window.", vim.log.levels.INFO)
-      return
+    -- Open split if window doesn't exist or is invalid
+    if not chat_state.winid or not api.nvim_win_is_valid(chat_state.winid) then
+        vim.cmd(string.format('keepalt rightbelow vsplit | buffer %d', bufnr))
+        chat_state.winid = api.nvim_get_current_win() -- Get the new window ID
+        vim.cmd(string.format('vertical resize %d', config.width or 80))
+        vim.notify(string.format("Opened chat window %d.", chat_state.winid), vim.log.levels.INFO)
+    end
+    
+    return chat_state.winid
+end
+
+-- Main function to toggle chat window visibility
+function M.toggle_chat_window(config, send_cb)
+  -- Store config and callback if provided (usually only on first call)
+  if config then chat_state.config = config end
+  if send_cb then chat_state.send_message_callback = send_cb end
+  
+  local winid = chat_state.winid
+  
+  -- Check if window exists and is valid
+  if winid and api.nvim_win_is_valid(winid) then
+    -- Window is valid, check if it's the current window
+    if api.nvim_get_current_win() == winid then
+      -- Current window, hide it
+      api.nvim_win_hide(winid)
+      vim.notify("Chat window hidden.", vim.log.levels.INFO)
+      -- Don't clear winid from state, so we know it's hidden
+    else
+      -- Not current window, focus it
+      api.nvim_set_current_win(winid)
+      vim.notify("Switched to chat window.", vim.log.levels.INFO)
     end
   else
-    -- Create buffer
-    chat_bufnr = api.nvim_create_buf(false, true) 
-    api.nvim_buf_set_option(chat_bufnr, 'bufhidden', 'wipe')
-    api.nvim_buf_set_option(chat_bufnr, 'filetype', 'markdown')
-    
-    -- Set buffer type to prompt and other options
-    api.nvim_buf_set_option(chat_bufnr, 'buftype', 'prompt')
-    api.nvim_buf_set_option(chat_bufnr, 'modifiable', true) -- Prompt needs modifiable
-    
-    -- Initial content - maybe just the prompt?
-    api.nvim_buf_set_lines(chat_bufnr, 0, -1, false, {"LLM Agent Chat", ""}) 
-    
-    -- Set the prompt text (appears on the last line)
-    vim.fn.prompt_setprompt(chat_bufnr, "> ")
-    
-    -- Set the callback for when Enter is pressed in the prompt buffer
-    vim.fn.prompt_setcallback(chat_bufnr, on_prompt_submit)
-    
-    -- Keymap to close buffer
-    api.nvim_buf_set_keymap(chat_bufnr, 'n', 'q', ':Bdelete!<CR>', { noremap = true, silent = true })
-    api.nvim_buf_set_keymap(chat_bufnr, 'i', '<Esc>', '<Nop>', { noremap = true, silent = true }) -- Optional: prevent Esc exiting prompt mode?
+    -- Window doesn't exist or is invalid, ensure it's opened
+    winid = ensure_window_open()
+    if winid then
+       api.nvim_set_current_win(winid) -- Focus the newly opened window
+       -- Move cursor to the end for prompt
+       api.nvim_win_set_cursor(winid, {api.nvim_buf_line_count(chat_state.bufnr), 0})
+       vim.cmd('startinsert') -- Enter insert mode
+    else 
+       vim.notify("Failed to open or find chat window.", vim.log.levels.ERROR)
+    end
   end
+end
 
-  -- Open split
-  vim.cmd(string.format('rightbelow vsplit | buffer %d', chat_bufnr))
-  vim.cmd(string.format('vertical resize %d', width))
-  
-  -- Move cursor to the end for prompt
-  api.nvim_win_set_cursor(0, {api.nvim_buf_line_count(chat_bufnr), 0})
-  vim.cmd('startinsert') -- Enter insert mode on the prompt line
-
-  vim.notify(string.format("Opened chat buffer %d. Type your message and press Enter.", chat_bufnr), vim.log.levels.INFO)
+-- Setup function (kept for potential future use, but toggle is main entry now)
+function M.setup_chat_window(config, send_cb)
+    M.toggle_chat_window(config, send_cb)
 end
 
 return M 
