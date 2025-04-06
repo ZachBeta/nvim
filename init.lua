@@ -27,15 +27,7 @@ local function debug_print(message)
   print(message)
 end
 
--- Create verification command
-vim.api.nvim_create_user_command("CheckLeader", function()
-  debug_print("Leader key is: '" .. vim.inspect(vim.g.mapleader) .. "'")
-  debug_print("Try <space>test to verify functionality")
-end, {})
-
--- # Step 3
 --
--- Add to init.lua
 -- Install packer if not installed
 local install_path = vim.fn.stdpath('data') .. '/site/pack/packer/start/packer.nvim'
 local packer_bootstrap = false
@@ -72,37 +64,44 @@ require('packer').startup(function(use)
     end
   }
 
+--  use {
+--    'zbirenbaum/copilot.lua',
+--    config = function()
+--      require('copilot').setup({
+--        suggestion = { enabled = false },
+--        panel = { enabled = false },
+--      })
+--    end
+--  }
+--
+--  use {
+--    'CopilotC-Nvim/CopilotChat.nvim',
+--    config = function()
+--      -- The module might be named differently than expected
+--      -- Let's try different possible names
+--      local status_ok, copilot_chat = pcall(require, "CopilotChat")
+--      if not status_ok then
+--        -- Try alternative module name
+--        status_ok, copilot_chat = pcall(require, "copilotchat")
+--        if not status_ok then
+--          print("Failed to load CopilotChat plugin")
+--          return
+--        end
+--      end
+--
+--      copilot_chat.setup()
+--    end,
+--    requires = {
+--      {"nvim-lua/plenary.nvim"},
+--      {"zbirenbaum/copilot.lua"} -- This dependency might be needed
+--    }
+--  }
+
   use {
-    'zbirenbaum/copilot.lua',
+    'nvim-lualine/lualine.nvim',
     config = function()
-      require('copilot').setup({
-        suggestion = { enabled = false },
-        panel = { enabled = false },
-      })
+      require('lualine').setup()
     end
-  }
-
-  use {
-    'CopilotC-Nvim/CopilotChat.nvim',
-    config = function()
-      -- The module might be named differently than expected
-      -- Let's try different possible names
-      local status_ok, copilot_chat = pcall(require, "CopilotChat")
-      if not status_ok then
-        -- Try alternative module name
-        status_ok, copilot_chat = pcall(require, "copilotchat")
-        if not status_ok then
-          print("Failed to load CopilotChat plugin")
-          return
-        end
-      end
-
-      copilot_chat.setup()
-    end,
-    requires = {
-      {"nvim-lua/plenary.nvim"},
-      {"zbirenbaum/copilot.lua"} -- This dependency might be needed
-    }
   }
 
   -- Other plugins would go here
@@ -122,5 +121,10 @@ vim.api.nvim_set_keymap('n', '<Leader>hl', ':HopLine<CR>', {noremap = true})
 vim.api.nvim_set_keymap('n', '<Leader>ff', ':Telescope find_files<CR>', {noremap = true})
 vim.api.nvim_set_keymap('n', '<Leader>fg', ':Telescope live_grep<CR>', {noremap = true})
 
-vim.api.nvim_set_keymap('n', '<Leader>cc', ':CopilotChat<CR>', {noremap = true})
+-- vim.api.nvim_set_keymap('n', '<Leader>cc', ':CopilotChat<CR>', {noremap = true})
 
+vim.o.termguicolors = true
+vim.o.updatetime = 300
+vim.o.timeoutlen = 500
+vim.o.signcolumn = "yes"
+vim.o.wrap = false
