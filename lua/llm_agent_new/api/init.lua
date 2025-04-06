@@ -53,6 +53,7 @@ function M.send_request(messages, final_callback)
     -- Construct the command arguments for jobstart
     local cmd_args = {
         'curl',
+        '-s', -- Add silent flag to suppress progress meter on stderr
         '-X', 'POST',
         url,
         '-H', "Content-Type: application/json",
@@ -75,13 +76,18 @@ function M.send_request(messages, final_callback)
         end,
         on_stderr = function(job_id, data, event)
              vim.schedule(function()
-                vim.notify("Job Callback: on_stderr received data chunk.", vim.log.levels.DEBUG)
-                if data then table.insert(stderr_chunks, table.concat(data, "")) end
+                -- Only notify on stderr if it's likely an error (with -s flag)
+                if data then 
+                   vim.notify("Job Callback: on_stderr received data chunk: " .. table.concat(data, ""), vim.log.levels.WARN)
+                   table.insert(stderr_chunks, table.concat(data, "")) 
+                end
             end)
         end,
         on_exit = function(job_id, exit_code, event)
+            -- *** Add notification BEFORE vim.schedule ***
+            vim.notify("Job Callback: Entered on_exit function, code: " .. tostring(exit_code), vim.log.levels.DEBUG)
             vim.schedule(function()
-                vim.notify("Job Callback: on_exit received, code: " .. tostring(exit_code), vim.log.levels.DEBUG)
+                vim.notify("Job Callback: Entered on_exit -> vim.schedule, code: " .. tostring(exit_code), vim.log.levels.DEBUG)
                 local response_body = table.concat(stdout_chunks, "")
                 local stderr_output = table.concat(stderr_chunks, "")
 
