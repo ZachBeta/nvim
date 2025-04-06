@@ -4,7 +4,7 @@
 
 local M = {}
 
-local api_config = {}
+local api_config = {} -- This will hold the full API config, including the debug flag
 
 -- Function to initialize the API module with configuration
 function M.setup(config)
@@ -12,8 +12,11 @@ function M.setup(config)
     vim.notify("LLM Agent API: Configuration is missing.", vim.log.levels.ERROR)
     return false
   end
-  api_config = config
+  api_config = config -- Store the passed config
   vim.notify("LLM Agent API: Initialized with provider: " .. (api_config.provider or "none"), vim.log.levels.INFO)
+  if api_config.debug then
+    vim.notify("LLM Agent API: Debug mode enabled.", vim.log.levels.INFO)
+  end
   return true
 end
 
@@ -61,7 +64,9 @@ function M.send_request(messages, final_callback)
     }
 
     vim.notify(string.format("LLM Agent API: Starting jobstart for Ollama (%s) at %s", model, url), vim.log.levels.INFO)
-    vim.notify("API: Using command args: " .. vim.inspect(cmd_args), vim.log.levels.DEBUG)
+    if api_config.debug then -- Conditional Debug Log
+      vim.notify("API: Using command args: " .. vim.inspect(cmd_args), vim.log.levels.DEBUG)
+    end
 
     local stdout_chunks = {}
     local stderr_chunks = {}
@@ -70,7 +75,9 @@ function M.send_request(messages, final_callback)
         clear_env = false,
         on_stdout = function(job_id, data, event)
             vim.schedule(function()
-                vim.notify("Job Callback: on_stdout received data chunk.", vim.log.levels.DEBUG)
+                if api_config.debug then -- Conditional Debug Log
+                  vim.notify("Job Callback: on_stdout received data chunk.", vim.log.levels.DEBUG)
+                end
                 if data then table.insert(stdout_chunks, table.concat(data, "")) end
             end)
         end,
@@ -84,10 +91,10 @@ function M.send_request(messages, final_callback)
             end)
         end,
         on_exit = function(job_id, exit_code, event)
-            -- *** Add notification BEFORE vim.schedule ***
-            vim.notify("Job Callback: Entered on_exit function, code: " .. tostring(exit_code), vim.log.levels.DEBUG)
             vim.schedule(function()
-                vim.notify("Job Callback: Entered on_exit -> vim.schedule, code: " .. tostring(exit_code), vim.log.levels.DEBUG)
+                if api_config.debug then -- Conditional Debug Log
+                  vim.notify("Job Callback: Entered on_exit -> vim.schedule, code: " .. tostring(exit_code), vim.log.levels.DEBUG)
+                end
                 local response_body = table.concat(stdout_chunks, "")
                 local stderr_output = table.concat(stderr_chunks, "")
 
@@ -99,7 +106,9 @@ function M.send_request(messages, final_callback)
                     return
                 end
 
-                vim.notify("Job Callback: curl success (exit 0). Raw stdout: " .. response_body, vim.log.levels.DEBUG)
+                if api_config.debug then -- Conditional Debug Log
+                  vim.notify("Job Callback: curl success (exit 0). Raw stdout: " .. response_body, vim.log.levels.DEBUG)
+                end
 
                 -- Decode JSON
                 local success, decoded_body = pcall(vim.fn.json_decode, response_body)
@@ -109,7 +118,9 @@ function M.send_request(messages, final_callback)
                    if final_callback then final_callback({ success = false, error = "Failed to decode Ollama JSON response." }) end
                    return
                 end
-                vim.notify("Job Callback: JSON decoded successfully.", vim.log.levels.DEBUG)
+                if api_config.debug then -- Conditional Debug Log
+                  vim.notify("Job Callback: JSON decoded successfully.", vim.log.levels.DEBUG)
+                end
 
                 -- Check for application-level error
                 if decoded_body.error then
@@ -122,15 +133,21 @@ function M.send_request(messages, final_callback)
                 local content = "(Error extracting content)"
                 if decoded_body.message and decoded_body.message.content then
                      content = decoded_body.message.content
-                     vim.notify("Job Callback: Content extracted successfully.", vim.log.levels.DEBUG)
+                     if api_config.debug then -- Conditional Debug Log
+                       vim.notify("Job Callback: Content extracted successfully.", vim.log.levels.DEBUG)
+                     end
                 else
                      vim.notify("Job Callback Warning: Could not find message.content in response.", vim.log.levels.WARN)
                 end
 
                 -- Execute final success callback
-                vim.notify("Job Callback: Preparing final success notification.", vim.log.levels.DEBUG)
+                if api_config.debug then -- Conditional Debug Log
+                  vim.notify("Job Callback: Preparing final success notification.", vim.log.levels.DEBUG)
+                end
                 if final_callback then
-                    vim.notify("Job Callback: Executing final callback.", vim.log.levels.DEBUG)
+                    if api_config.debug then -- Conditional Debug Log
+                      vim.notify("Job Callback: Executing final callback.", vim.log.levels.DEBUG)
+                    end
                     final_callback({ success = true, content = content })
                 end
             end) -- end vim.schedule

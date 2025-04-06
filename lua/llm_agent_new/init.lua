@@ -6,6 +6,7 @@ M._VERSION = "0.1.0"
 
 -- Default configuration
 M.default_config = {
+  debug = false,
   ui = {
     width = 80,
     height = 20,

@@ -14,6 +14,7 @@ vim.o.tabstop = 2
 vim.o.shiftwidth = 2
 vim.o.expandtab = true
 vim.o.smartindent = true
+vim.o.cmdheight = 2
 
 -- Test mapping to verify leader key works
 vim.api.nvim_set_keymap('n', '<Leader>test', ':echo "Leader key works!"<CR>', {noremap = true})
