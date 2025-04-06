@@ -106,10 +106,10 @@ require('packer').startup(function(use)
 
   -- Or for packer.nvim
   use {
-    '~/.config/nvim/lua/llm-agent',  -- Absolute path with ~
-    as = 'llm-agent',
+    '~/.config/nvim/lua/llm_agent_new',  -- Absolute path with ~
+    as = 'llm_agent_new',
     config = function()
-      require("llm-agent").setup()
+      require("llm_agent_new").setup()
     end,
   }
   

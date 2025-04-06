@@ -652,7 +652,7 @@ function M.cancel_request()
           content = "Request cancelled",
           timestamp = os.time()
         }
-      }
+      end
     else
       -- Add cancellation message
       M.add_message("system", "Request cancelled")
