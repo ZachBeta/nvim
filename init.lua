@@ -142,3 +142,16 @@ vim.o.updatetime = 300
 vim.o.timeoutlen = 500
 vim.o.signcolumn = "yes"
 vim.o.wrap = false
+
+-- Global function accessible by the keymap
+function M.toggle_chat()
+    if ui_module and ui_module.toggle_chat_window then
+        -- Pass config and callback only if needed (e.g., on first open)
+        -- The UI module now stores these internally
+        ui_module.toggle_chat_window(M._config.ui, handle_send_message)
+    else
+        vim.notify("LLM Agent Error: UI module not loaded or toggle function missing.", vim.log.levels.ERROR)
+    end
+end
+
+return M

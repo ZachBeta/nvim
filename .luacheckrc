@@ -8,7 +8,8 @@ std = {
   read_globals = {"package"}
 }
 ignore = {
-    "143", -- Setting read-only field (used in tests for package.loaded)
+    "142", -- Setting non-standard global variable (used for package.loaded in tests)
+    "143", -- Mutating non-standard global variable (used in tests for package.loaded)
     "212", -- Unused argument
     "631"  -- Line is too long
 }
