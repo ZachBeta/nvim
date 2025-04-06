@@ -51,10 +51,21 @@ if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
   debug_print("Packer installed")
 end
 
--- Basic packer setup
+-- Correct way to add hop.nvim
 require('packer').startup(function(use)
   -- Packer can manage itself
   use 'wbthomason/packer.nvim'
+  
+  -- Inside your packer setup function
+  use {
+    'phaazon/hop.nvim',
+    branch = 'v2', -- important: use v2 branch
+    config = function()
+      require('hop').setup()
+    end
+  }
+  
+  -- Other plugins would go here
   
   -- Automatically set up configuration after cloning packer.nvim
   if packer_bootstrap then
@@ -62,8 +73,9 @@ require('packer').startup(function(use)
   end
 end)
 
--- # Step 4
---
--- -- Add after packer setup
--- debug_print("After plugin setup, leader key is: '" .. vim.inspect(vim.g.mapleader) .. "'")
--- vim.api.nvim_set_keymap('n', '<Leader>ps', ':PackerSync<CR>', {noremap = true})
+require('hop').setup()
+
+-- Add keymaps after plugin setup
+vim.api.nvim_set_keymap('n', '<Leader>hw', ':HopWord<CR>', {noremap = true})
+vim.api.nvim_set_keymap('n', '<Leader>hl', ':HopLine<CR>', {noremap = true})
+  
