@@ -64,6 +64,10 @@ require('packer').startup(function(use)
     end
   }
 
+  use {
+    'nvim-lua/plenary.nvim', -- Required for testing and other utilities
+  }
+
 --  use {
 --    'zbirenbaum/copilot.lua',
 --    config = function()
